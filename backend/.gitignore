@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+#Base de datos local
+*.db
+*.sqlite3
+jobcopilot.db
+
+#Subidas y temporales
+uploads/
+*.log
