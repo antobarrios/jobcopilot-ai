@@ -1,4 +1,8 @@
-from fastapi import FastAPI
+from dotenv import load_dotenv 
+load_dotenv()
+from fastapi import FastAPI, UploadFile
+import google.generativeai as genai 
+import os 
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 from typing import Optional 
 
@@ -63,3 +67,20 @@ def listar_trabajos(remoto:Optional[bool]=None,sueldo_minimo:Optional[int]=None)
             session.commit()
             session.refresh(trabajo)
             return trabajo 
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-3.5-flash')
+@app.post("/analizar-cv")
+async def analizar_cv(file:UploadFile,vacante:str):
+    try:
+        pdf_bytes = await file.read()
+        print(f"PDF pesa: {len(pdf_bytes)} bytes")
+        
+        prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
+        Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
+        
+        result= model.generate_content([prompt,{"mime_type": "application/pdf","data": pdf_bytes}])
+        print(f"Respuesta Gemini:{result.text}")
+        return {"resultado":result.text}
+    except Exception as e:
+        print(f"ERROR REAL DE GEMINI:{e}")
+        return {"error": str(e)}
