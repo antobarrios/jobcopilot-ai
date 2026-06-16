@@ -67,12 +67,12 @@ def listar_trabajos(remoto:Optional[bool]=None,sueldo_minimo:Optional[int]=None)
         return {"cantidad": len(trabajos), "trabajos": trabajos}    
     # 7. ENDPOINT POST PARA AGREGAR TRABAJOS NUEVOS
 @app.post("/trabajos", response_model=Trabajo)
-    def crear_trabajo(trabajo: Trabajo):
-        with Session(engine) as session:
-            session.add(trabajo)
-            session.commit()
-            session.refresh(trabajo)
-            return trabajo 
+def crear_trabajo(trabajo: Trabajo):
+    with Session(engine) as session:
+        session.add(trabajo)
+        session.commit()
+        session.refresh(trabajo)
+        return trabajo
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-1.5-flash')
 @app.post("/analizar-cv")
