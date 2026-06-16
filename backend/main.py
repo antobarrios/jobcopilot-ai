@@ -11,7 +11,7 @@ class Trabajo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     titulo: str
     empresa: str
-    ubicacion: str
+    ubicacion: str | None = None
     remoto: bool = True
     sueldo_usd: str
     url_original: str
