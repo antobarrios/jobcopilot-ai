@@ -10,9 +10,12 @@ from typing import Optional
 class Trabajo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     titulo: str
-    empresa: str  
-    remoto: bool
-    sueldo_usd: int 
+    empresa: str
+    ubicacion: str
+    remoto: bool = True
+    sueldo_usd: str
+    url_original: str
+   
 
 # 2. CONECTAMOS A LA BASE DE DATOS 
 sqlite_file_name = "jobcopilot.db"
