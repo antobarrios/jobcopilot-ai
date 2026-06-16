@@ -13,7 +13,7 @@ class Trabajo(SQLModel, table=True):
     empresa: str
     ubicacion: str | None = None
     remoto: bool = True
-    sueldo_usd: str
+    sueldo_usd: str | None = None
     url_original: str | None = None
    
 
