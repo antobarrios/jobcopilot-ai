@@ -24,6 +24,9 @@ engine = create_engine(sqlite_url,echo=True)
 
 # 3. CREAMOS LA BASE SI NO EXISTE 
 def crear_db_y_tablas():
+    import os
+    if os.path.exists("jobcopilot.db"):
+        os.remove("jobcopilot.db")
     SQLModel.metadata.create_all(engine)
 
 # 4. CREAMOS LA APP 
