@@ -43,13 +43,13 @@ def on_startup():
         if not results: #Si no hay nada, cargamos los 3 trabajos
             trabajo1 = Trabajo(titulo="Backend Dev Jr", 
             empresa="Tech SA", remoto=True,
-            sueldo_usd=1000)
+            sueldo_usd="1000")
             trabajo2 = Trabajo(titulo="Python Developer",
             empresa="StarupXYZ", remoto=False,
-            sueldo_usd=1000)
+            sueldo_usd="1000")
             trabajo3 = Trabajo(titulo="FastAPI Trainee",
             empresa="Software Factory",
-            remoto=True, sueldo_usd=800)
+            remoto=True, sueldo_usd="800")
             session.add(trabajo1)
             session.add(trabajo2)
             session.add(trabajo3)
@@ -66,7 +66,7 @@ def listar_trabajos(remoto:Optional[bool]=None,sueldo_minimo:Optional[int]=None)
         trabajos = session.exec(statement).all()
         return {"cantidad": len(trabajos), "trabajos": trabajos}    
     # 7. ENDPOINT POST PARA AGREGAR TRABAJOS NUEVOS
-    @app.post("/trabajos")
+@app.post("/trabajos", response_model=Trabajo)
     def crear_trabajo(trabajo: Trabajo):
         with Session(engine) as session:
             session.add(trabajo)
