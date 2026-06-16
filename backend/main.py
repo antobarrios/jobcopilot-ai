@@ -14,7 +14,7 @@ class Trabajo(SQLModel, table=True):
     ubicacion: str | None = None
     remoto: bool = True
     sueldo_usd: str
-    url_original: str
+    url_original: str | None = None
    
 
 # 2. CONECTAMOS A LA BASE DE DATOS 
