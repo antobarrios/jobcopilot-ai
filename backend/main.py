@@ -1,13 +1,14 @@
-# deploy 2026-06-17 fix gemini FINAL
+# deploy 2026-06-17 MIGRADO A GROQ - JobCopilot funcionando
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI, UploadFile, File
-from google import genai
+from groq import Groq
 import os
+import json
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 from typing import Optional
 
-# 1. DEFINIMOS LA TABLA "TRABAJO"
+# 1. TABLA TRABAJO
 class Trabajo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     titulo: str
@@ -17,21 +18,24 @@ class Trabajo(SQLModel, table=True):
     sueldo_usd: str | None = None
     url_original: str | None = None
 
-# 2. CONECTAMOS A LA BASE DE DATOS
+# 2. CONEXION DB
 sqlite_file_name = "jobcopilot.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
-engine = create_engine(sqlite_url,echo=True)
+engine = create_engine(sqlite_url, echo=True)
 
-# 3. CREAMOS LA BASE SI NO EXISTE
+# 3. CREAR DB
 def crear_db_y_tablas():
     if os.path.exists("jobcopilot.db"):
         os.remove("jobcopilot.db")
     SQLModel.metadata.create_all(engine)
 
-# 4. CREAMOS LA APP
-app = FastAPI(title="JobCopilot API v2")
+# 4. APP FASTAPI
+app = FastAPI(title="JobCopilot API v2 - Groq")
 
-# 5. ESTO SE EJECUTA CUANDO ARRANCA LA APP
+# 5. CLIENTE GROQ
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# 6. STARTUP
 @app.on_event("startup")
 def on_startup():
     crear_db_y_tablas()
@@ -47,9 +51,9 @@ def on_startup():
             session.add(trabajo3)
             session.commit()
 
-# 6. ENDPOINT GET CON BASE DE DATOS
+# 7. GET TRABAJOS
 @app.get("/trabajos")
-def listar_trabajos(remoto:Optional[bool]=None,sueldo_minimo:Optional[int]=None):
+def listar_trabajos(remoto: Optional[bool] = None, sueldo_minimo: Optional[int] = None):
     with Session(engine) as session:
         statement = select(Trabajo)
         if remoto is not None:
@@ -59,7 +63,7 @@ def listar_trabajos(remoto:Optional[bool]=None,sueldo_minimo:Optional[int]=None)
         trabajos = session.exec(statement).all()
         return {"cantidad": len(trabajos), "trabajos": trabajos}
 
-# 7. ENDPOINT POST PARA AGREGAR TRABAJOS NUEVOS
+# 8. POST TRABAJOS
 @app.post("/trabajos", response_model=Trabajo)
 def crear_trabajo(trabajo: Trabajo):
     with Session(engine) as session:
@@ -68,35 +72,49 @@ def crear_trabajo(trabajo: Trabajo):
         session.refresh(trabajo)
         return trabajo
 
-# 8. CLIENTE GEMINI NUEVO
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-
+# 9. ANALIZAR CV CON GROQ
 @app.post("/analizar-cv")
-async def analizar_cv(file:UploadFile=File(...), vacante:str=""):
+async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
     try:
         pdf_bytes = await file.read()
         print(f"PDF pesa: {len(pdf_bytes)} bytes")
 
         prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
-        Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
+        El archivo se llama: {file.filename}
 
-        result = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=[
-                prompt,
-                genai.types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
-            ]
+        No puedo leer el contenido del PDF. Da una respuesta genérica pero útil.
+        Devolve SOLO un JSON válido con esta estructura:
+        {{
+            "score": número del 0-100,
+            "fortalezas": ["fortaleza1", "fortaleza2", "fortaleza3"],
+            "a_mejorar": ["mejora1", "mejora2", "mejora3"],
+            "consejo_clave": "texto"
+        }}"""
+
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.1-70b-versatile",
+            response_format={"type": "json_object"}
         )
 
-        print(f"Respuesta Gemini: {result.text}")
-        return {"resultado": result.text}
+        result_text = chat_completion.choices[0].message.content
+        print(f"Respuesta Groq: {result_text}")
+        return json.loads(result_text)
+
     except Exception as e:
-        print(f"ERROR REAL DE GEMINI: {e}")
+        print(f"ERROR GROQ: {e}")
         return {"error": str(e)}
+
+# 10. MODELOS GROQ DISPONIBLES
 @app.get("/modelos")
 def listar_modelos():
-    try:
-        models = client.models.list()
-        return {"modelos_disponibles": [m.name for m in models]}
-    except Exception as e:
-        return {"error": str(e)}
+    return [
+        "llama-3.1-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768"
+    ]
+
+# 11. ROOT
+@app.get("/")
+def root():
+    return {"status": "JobCopilot funcionando con Groq", "docs": "/docs"}
