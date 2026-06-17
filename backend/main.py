@@ -1,7 +1,7 @@
 from dotenv import load_dotenv 
 load_dotenv()
-from fastapi import FastAPI, UploadFile
-import google.generativeai as genai 
+from wfastapi import FastAPI, UploadFile
+from google import genai
 import os 
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 from typing import Optional 
@@ -73,7 +73,7 @@ def crear_trabajo(trabajo: Trabajo):
         session.commit()
         session.refresh(trabajo)
         return trabajo
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel('gemini-pro')
 @app.post("/analizar-cv")
 async def analizar_cv(file:UploadFile,vacante:str):
