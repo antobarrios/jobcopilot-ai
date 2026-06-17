@@ -83,8 +83,7 @@ async def analizar_cv(file:UploadFile,vacante:str):
         
         prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
         Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
-        
-        result = client.models.generate_content(model='gemini-1.5-flash-latest', contents=prompt)
+        result = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
         print(f"Respuesta Gemini:{result.text}")
         return {"resultado":result.text}
     except Exception as e:
