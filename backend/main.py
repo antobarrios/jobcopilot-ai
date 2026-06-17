@@ -1,4 +1,4 @@
-     # deploy 2026-06-17 fix gemini
+# deploy 2026-06-17 fix gemini
 from dotenv import load_dotenv 
 load_dotenv()
 from fastapi import FastAPI, UploadFile
