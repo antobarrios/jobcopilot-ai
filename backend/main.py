@@ -81,7 +81,7 @@ async def analizar_cv(file:UploadFile=File(...), vacante:str=""):
         Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
 
         result = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash-001',
             contents=[
                 prompt,
                 genai.types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
