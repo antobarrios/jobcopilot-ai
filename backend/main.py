@@ -1,14 +1,21 @@
 # deploy 2026-06-17 MIGRADO A GROQ - JobCopilot funcionando
-from dotenv import load_dotenv
-load_dotenv()
-from fastapi import FastAPI, UploadFile, File
-from groq import Groq
+from fastapi import FastAPI, UploadFile, File, HTTPException
 import os
 import json
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 from typing import Optional
+from dotenv import load_dotenv
 
-# 1. TABLA TRABAJO
+# 1. CARGAR ENV PRIMERO
+load_dotenv()
+
+# 2. PATCH PROXIES ANTES DE IMPORTAR GROQ
+for var in ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy']:
+    os.environ.pop(var, None)
+
+from groq import Groq # Importar DESPUÉS del patch
+
+# 3. TABLA TRABAJO
 class Trabajo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     titulo: str
@@ -18,31 +25,22 @@ class Trabajo(SQLModel, table=True):
     sueldo_usd: str | None = None
     url_original: str | None = None
 
-# 2. CONEXION DB
+# 4. CONEXION DB
 sqlite_file_name = "jobcopilot.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
-engine = create_engine(sqlite_url, echo=True)
+engine = create_engine(sqlite_url, echo=False) # echo=False para no llenar logs
 
-# 3. CREAR DB
+# 5. CREAR DB
 def crear_db_y_tablas():
-    if os.path.exists("jobcopilot.db"):
-        os.remove("jobcopilot.db")
     SQLModel.metadata.create_all(engine)
 
-# 4. APP FASTAPI
+# 6. APP FASTAPI
 app = FastAPI(title="JobCopilot API v2 - Groq")
 
-# 5. CLIENTE GROQ
-# 5. CLIENTE GROQ
-os.environ.pop('HTTP_PROXY', None)
-os.environ.pop('HTTPS_PROXY', None)
-os.environ.pop('ALL_PROXY', None)
-os.environ.pop('http_proxy', None)
-os.environ.pop('https_proxy', None)
-
+# 7. CLIENTE GROQ
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# 6. STARTUP
+# 8. STARTUP
 @app.on_event("startup")
 def on_startup():
     crear_db_y_tablas()
@@ -50,15 +48,15 @@ def on_startup():
         statement = select(Trabajo)
         results = session.exec(statement).first()
         if not results:
-            trabajo1 = Trabajo(titulo="Backend Dev Jr", empresa="Tech SA", remoto=True, sueldo_usd="1000")
-            trabajo2 = Trabajo(titulo="Python Developer", empresa="StarupXYZ", remoto=False, sueldo_usd="1000")
-            trabajo3 = Trabajo(titulo="FastAPI Trainee", empresa="Software Factory", remoto=True, sueldo_usd="800")
-            session.add(trabajo1)
-            session.add(trabajo2)
-            session.add(trabajo3)
+            trabajos_iniciales = [
+                Trabajo(titulo="Backend Dev Jr", empresa="Tech SA", remoto=True, sueldo_usd="1000"),
+                Trabajo(titulo="Python Developer", empresa="StarupXYZ", remoto=False, sueldo_usd="1000"),
+                Trabajo(titulo="FastAPI Trainee", empresa="Software Factory", remoto=True, sueldo_usd="800")
+            ]
+            session.add_all(trabajos_iniciales)
             session.commit()
 
-# 7. GET TRABAJOS
+# 9. GET TRABAJOS
 @app.get("/trabajos")
 def listar_trabajos(remoto: Optional[bool] = None, sueldo_minimo: Optional[int] = None):
     with Session(engine) as session:
@@ -70,7 +68,7 @@ def listar_trabajos(remoto: Optional[bool] = None, sueldo_minimo: Optional[int] 
         trabajos = session.exec(statement).all()
         return {"cantidad": len(trabajos), "trabajos": trabajos}
 
-# 8. POST TRABAJOS
+# 10. POST TRABAJOS
 @app.post("/trabajos", response_model=Trabajo)
 def crear_trabajo(trabajo: Trabajo):
     with Session(engine) as session:
@@ -79,49 +77,52 @@ def crear_trabajo(trabajo: Trabajo):
         session.refresh(trabajo)
         return trabajo
 
-# 9. ANALIZAR CV CON GROQ
+# 11. ANALIZAR CV CON GROQ
 @app.post("/analizar-cv")
 async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
     try:
-        pdf_bytes = await file.read()
-        print(f"PDF pesa: {len(pdf_bytes)} bytes")
+        await file.read() # Leer para no dejar el stream abierto
+        print(f"Analizando {file.filename} para: {vacante}")
 
         prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
         El archivo se llama: {file.filename}
 
         No puedo leer el contenido del PDF. Da una respuesta genérica pero útil.
-        Devolve SOLO un JSON válido con esta estructura:
+        Devolve SOLO un JSON válido con esta estructura exacta:
         {{
-            "score": número del 0-100,
-            "fortalezas": ["fortaleza1", "fortaleza2", "fortaleza3"],
-            "a_mejorar": ["mejora1", "mejora2", "mejora3"],
-            "consejo_clave": "texto"
+            "score": 75,
+            "fortalezas": ["Experiencia relevante", "Stack técnico", "Soft skills"],
+            "a_mejorar": ["Agregar métricas", "Optimizar keywords", "Formato ATS"],
+            "consejo_clave": "Adapta el CV usando palabras clave de la vacante"
         }}"""
 
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-70b-versatile",
-            response_format={"type": "json_object"}
+            model="llama3-70b-8192", # Modelo válido en 0.4.2
+            temperature=0.3
         )
 
         result_text = chat_completion.choices[0].message.content
         print(f"Respuesta Groq: {result_text}")
         return json.loads(result_text)
 
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Groq devolvió JSON inválido")
     except Exception as e:
         print(f"ERROR GROQ: {e}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
-# 10. MODELOS GROQ DISPONIBLES
+# 12. MODELOS GROQ DISPONIBLES
 @app.get("/modelos")
 def listar_modelos():
     return [
-        "llama-3.1-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768"
+        "llama3-70b-8192",
+        "llama3-8b-8192",
+        "mixtral-8x7b-32768",
+        "gemma-7b-it"
     ]
 
-# 11. ROOT
+# 13. ROOT
 @app.get("/")
 def root():
     return {"status": "JobCopilot funcionando con Groq", "docs": "/docs"}
