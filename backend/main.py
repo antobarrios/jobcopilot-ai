@@ -1,6 +1,6 @@
 from dotenv import load_dotenv 
 load_dotenv()
-from wfastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile
 from google import genai
 import os 
 from sqlmodel import Field, SQLModel, create_engine, Session, select
