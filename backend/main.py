@@ -1,14 +1,11 @@
-# deploy 2026-06-17 fix gemini
+# deploy 2026-06-17 fix gemini FINAL
 from dotenv import load_dotenv
 load_dotenv()
-from fastapi import FastAPI, UploadFile
-import google.generativeai as genai
+from fastapi import FastAPI, UploadFile, File
+from google import genai
 import os
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 from typing import Optional
-
-# Configurar Gemini ANTES de crear la app
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # 1. DEFINIMOS LA TABLA "TRABAJO"
 class Trabajo(SQLModel, table=True):
@@ -27,7 +24,6 @@ engine = create_engine(sqlite_url,echo=True)
 
 # 3. CREAMOS LA BASE SI NO EXISTE
 def crear_db_y_tablas():
-    import os
     if os.path.exists("jobcopilot.db"):
         os.remove("jobcopilot.db")
     SQLModel.metadata.create_all(engine)
@@ -72,9 +68,11 @@ def crear_trabajo(trabajo: Trabajo):
         session.refresh(trabajo)
         return trabajo
 
-# 8. ANALIZAR CV - ARREGLADO
+# 8. CLIENTE GEMINI NUEVO
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+
 @app.post("/analizar-cv")
-async def analizar_cv(file:UploadFile, vacante:str):
+async def analizar_cv(file:UploadFile=File(...), vacante:str=""):
     try:
         pdf_bytes = await file.read()
         print(f"PDF pesa: {len(pdf_bytes)} bytes")
@@ -82,11 +80,16 @@ async def analizar_cv(file:UploadFile, vacante:str):
         prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
         Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
 
-        model = genai.GenerativeModel('gemini-1.5-flash-001')
-        result = model.generate_content([prompt, {"mime_type": "application/pdf", "data": pdf_bytes}])
+        result = client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=[
+                prompt,
+                genai.types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+            ]
+        )
 
-        print(f"Respuesta Gemini:{result.text}")
+        print(f"Respuesta Gemini: {result.text}")
         return {"resultado": result.text}
     except Exception as e:
-        print(f"ERROR REAL DE GEMINI:{e}")
+        print(f"ERROR REAL DE GEMINI: {e}")
         return {"error": str(e)}
