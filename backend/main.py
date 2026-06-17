@@ -81,7 +81,7 @@ async def analizar_cv(file:UploadFile=File(...), vacante:str=""):
         Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
 
         result = client.models.generate_content(
-            model='gemini-1.5-flash-8b',
+            model='gemini-2.5-flash',
             contents=[
                 prompt,
                 genai.types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
@@ -92,4 +92,11 @@ async def analizar_cv(file:UploadFile=File(...), vacante:str=""):
         return {"resultado": result.text}
     except Exception as e:
         print(f"ERROR REAL DE GEMINI: {e}")
+        return {"error": str(e)}
+@app.get("/modelos")
+def listar_modelos():
+    try:
+        models = client.models.list()
+        return {"modelos_disponibles": [m.name for m in models]}
+    except Exception as e:
         return {"error": str(e)}
