@@ -33,6 +33,13 @@ def crear_db_y_tablas():
 app = FastAPI(title="JobCopilot API v2 - Groq")
 
 # 5. CLIENTE GROQ
+# 5. CLIENTE GROQ
+os.environ.pop('HTTP_PROXY', None)
+os.environ.pop('HTTPS_PROXY', None)
+os.environ.pop('ALL_PROXY', None)
+os.environ.pop('http_proxy', None)
+os.environ.pop('https_proxy', None)
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # 6. STARTUP
