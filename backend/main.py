@@ -57,7 +57,7 @@ def on_startup():
 
 # 7. GET TRABAJOS
 @app.get("/trabajos")
-def listar_trabajos(remoto: Optional = None, sueldo_minimo: Optional[int] = None):
+def listar_trabajos(remoto: Optional[bool] = None, sueldo_minimo: Optional[int] = None):
     with Session(engine) as session:
         statement = select(Trabajo)
         if remoto is not None:
