@@ -87,7 +87,7 @@ async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
 
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="mixtral-8x7b-32768"
+            model="llama-3.3-70b-versatile"
         )
         result_text = chat_completion.choices[0].message.content
         return json.loads(result_text)
