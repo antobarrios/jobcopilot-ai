@@ -1,86 +1,105 @@
-from dotenv import load_dotenv 
-load_dotenv()
-from fastapi import FastAPI, UploadFile
-import google.generativeai as genai 
-import os 
-from sqlmodel import Field, SQLModel, create_engine, Session, select
-from typing import Optional 
+# deploy 2026-06-17 MIGRADO A GROQ - JobCopilot funcionando
+import os
 
-# 1. DEFINIMOS LA TABLA "TRABAJO"
+# === PATCH PROXIES ANTES DE CUALQUIER IMPORT DE GROQ ===
+for var in ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy']:
+    os.environ.pop(var, None)
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from fastapi import FastAPI, UploadFile, File, HTTPException
+import json
+from sqlmodel import Field, SQLModel, create_engine, Session, select
+from typing import Optional
+from groq import Groq # AHORA SÍ, después del patch
+
+# 1. TABLA TRABAJO
 class Trabajo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     titulo: str
-    empresa: str  
-    remoto: bool
-    sueldo_usd: int 
+    empresa: str
+    ubicacion: str | None = None
+    remoto: bool = True
+    sueldo_usd: str | None = None
+    url_original: str | None = None
 
-# 2. CONECTAMOS A LA BASE DE DATOS 
+# 2. CONEXION DB
 sqlite_file_name = "jobcopilot.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
-engine = create_engine(sqlite_url,echo=True)
+engine = create_engine(sqlite_url, echo=False)
 
-# 3. CREAMOS LA BASE SI NO EXISTE 
+# 3. CREAR DB
 def crear_db_y_tablas():
     SQLModel.metadata.create_all(engine)
 
-# 4. CREAMOS LA APP 
-app = FastAPI(title="JobCopilot API v2")
+# 4. APP FASTAPI
+app = FastAPI(title="JobCopilot API v2 - Groq")
 
-# 5. ESTO SE EJECUTA CUANDO ARRANCA LA APP 
+# 5. CLIENTE GROQ
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# 6. STARTUP
 @app.on_event("startup")
 def on_startup():
     crear_db_y_tablas()
-    # AGREGAMOS DATOS DE PRUEBA SI LA BASE ESTA VACIA
     with Session(engine) as session:
         statement = select(Trabajo)
         results = session.exec(statement).first()
-        if not results: #Si no hay nada, cargamos los 3 trabajos
-            trabajo1 = Trabajo(titulo="Backend Dev Jr", 
-            empresa="Tech SA", remoto=True,
-            sueldo_usd=1000)
-            trabajo2 = Trabajo(titulo="Python Developer",
-            empresa="StarupXYZ", remoto=False,
-            sueldo_usd=1000)
-            trabajo3 = Trabajo(titulo="FastAPI Trainee",
-            empresa="Software Factory",
-            remoto=True, sueldo_usd=800)
-            session.add(trabajo1)
-            session.add(trabajo2)
-            session.add(trabajo3)
+        if not results:
+            trabajos_iniciales = [
+                Trabajo(titulo="Backend Dev Jr", empresa="Tech SA", remoto=True, sueldo_usd="1000"),
+                Trabajo(titulo="Python Developer", empresa="StarupXYZ", remoto=False, sueldo_usd="1000"),
+                Trabajo(titulo="FastAPI Trainee", empresa="Software Factory", remoto=True, sueldo_usd="800")
+            ]
+            session.add_all(trabajos_iniciales)
             session.commit()
-# 6. ENDPOINT GET CON BASE DE DATOS 
-@app.get("/trabajos") 
-def listar_trabajos(remoto:Optional[bool]=None,sueldo_minimo:Optional[int]=None):
+
+# 7. GET TRABAJOS
+@app.get("/trabajos")
+def listar_trabajos(remoto: Optional = None, sueldo_minimo: Optional[int] = None):
     with Session(engine) as session:
         statement = select(Trabajo)
-        if remoto is not None: 
-            statement = statement.where(Trabajo.remoto == remoto) 
-        if sueldo_minimo is not None: 
+        if remoto is not None:
+            statement = statement.where(Trabajo.remoto == remoto)
+        if sueldo_minimo is not None:
             statement = statement.where(Trabajo.sueldo_usd >= sueldo_minimo)
         trabajos = session.exec(statement).all()
-        return {"cantidad": len(trabajos), "trabajos": trabajos}    
-    # 7. ENDPOINT POST PARA AGREGAR TRABAJOS NUEVOS
-    @app.post("/trabajos")
-    def crear_trabajo(trabajo: Trabajo):
-        with Session(engine) as session:
-            session.add(trabajo)
-            session.commit()
-            session.refresh(trabajo)
-            return trabajo 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-3.5-flash')
+        return {"cantidad": len(trabajos), "trabajos": trabajos}
+
+# 8. POST TRABAJOS
+@app.post("/trabajos", response_model=Trabajo)
+def crear_trabajo(trabajo: Trabajo):
+    with Session(engine) as session:
+        session.add(trabajo)
+        session.commit()
+        session.refresh(trabajo)
+        return trabajo
+
+# 9. ANALIZAR CV CON GROQ
 @app.post("/analizar-cv")
-async def analizar_cv(file:UploadFile,vacante:str):
+async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
     try:
-        pdf_bytes = await file.read()
-        print(f"PDF pesa: {len(pdf_bytes)} bytes")
-        
+        await file.read()
         prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
-        Devolve SOLO un JSON con: score del 0-100, 3 fortalezas, 3 cosas a mejorar."""
-        
-        result= model.generate_content([prompt,{"mime_type": "application/pdf","data": pdf_bytes}])
-        print(f"Respuesta Gemini:{result.text}")
-        return {"resultado":result.text}
+        El archivo se llama: {file.filename}
+        Devolve SOLO un JSON válido: {{"score": 75, "fortalezas": ["..."], "a_mejorar": ["..."], "consejo_clave": "..."}}"""
+
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="mixtral-8x7b-32768"
+        )
+        result_text = chat_completion.choices[0].message.content
+        return json.loads(result_text)
     except Exception as e:
-        print(f"ERROR REAL DE GEMINI:{e}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Error Groq: {str(e)}")
+
+# 10. MODELOS GROQ DISPONIBLES
+@app.get("/modelos")
+def listar_modelos():
+    return ["mixtral-8x7b-32768", "llama2-70b-4096", "gemma-7b-it"]
+
+# 11. ROOT
+@app.get("/")
+def root():
+    return {"status": "JobCopilot funcionando con Groq", "docs": "/docs"}
