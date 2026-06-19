@@ -25,7 +25,7 @@ class Trabajo(SQLModel, table=True):
     url_original: str | None = None
 
 # 2. CONEXION DB
-sqlite_file_name = "jobcopilot.db"
+sqlite_file_name = "matchcv.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 engine = create_engine(sqlite_url, echo=False)
 
@@ -34,7 +34,7 @@ def crear_db_y_tablas():
     SQLModel.metadata.create_all(engine)
 
 # 4. APP FASTAPI
-app = FastAPI(title="JobCopilot API v2 - Groq")
+app = FastAPI(title="MatchCV API v2 - Groq")
 
 # 5. CLIENTE GROQ
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -102,4 +102,4 @@ def listar_modelos():
 # 11. ROOT
 @app.get("/")
 def root():
-    return {"status": "JobCopilot funcionando con Groq", "docs": "/docs"}
+    return {"status": "MatchCV funcionando con Groq", "docs": "/docs"}
