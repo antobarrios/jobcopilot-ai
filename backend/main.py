@@ -68,7 +68,7 @@ def on_startup():
 
 # 7. GET TRABAJOS
 @app.get("/trabajos")
-def listar_trabajos(remoto: Optional[bool] = None, sueldo_minimo: Optional[int] = None):
+def listar_trabajos(remoto: Optional = None, sueldo_minimo: Optional[int] = None):
     with Session(engine) as session:
         statement = select(Trabajo)
         if remoto is not None:
@@ -135,7 +135,14 @@ REGLAS: 1. Solo datos reales del CV 2. Sin frases genéricas tipo 'buena experie
 
         result_text = chat_completion.choices[0].message.content
         data = json.loads(result_text)
-        return {"score": data.get("match_percentage", 0)}
+        return {
+            "score": data.get("match_percentage", 0),
+            "verdict": data.get("verdict", ""),
+            "strengths": data.get("strengths", []),
+            "gaps": data.get("gaps", []),
+            "ats_score": data.get("ats_score", ""),
+            "recommendations": data.get("recommendations", [])
+        }
 
     except Exception as e:
         print(f"ERROR DETALLE: {str(e)}")
