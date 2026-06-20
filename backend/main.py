@@ -134,7 +134,8 @@ REGLAS: 1. Solo datos reales del CV 2. Sin frases genéricas tipo 'buena experie
         )
 
         result_text = chat_completion.choices[0].message.content
-        return json.loads(result_text)
+data = json.loads(result_text) 
+return {"score": data.get("match_percentage", 0)} 
 
     except Exception as e:
         print(f"ERROR DETALLE: {str(e)}")
