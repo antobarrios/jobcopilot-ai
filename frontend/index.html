@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchCV - Análisis de CV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #fafafa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+       .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+       .header {
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-size: 52px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+       .subtitle {
+            color: #a3a3a3;
+            font-size: 18px;
+        }
+
+       .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+       .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            color: #e5e5e5;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+       .file-input {
+            background: #171717;
+            border: 2px dashed #404040;
+            border-radius: 12px;
+            padding: 60px 20px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+       .file-input:hover {
+            border-color: #22c55e;
+            background: #1a1a1a;
+        }
+
+        #fileName {
+            color: #fafafa;
+            font-size: 16px;
+            display: block;
+        }
+
+        textarea {
+            background: #171717;
+            border: 1px solid #404040;
+            border-radius: 12px;
+            padding: 18px;
+            color: #fafafa;
+            font-size: 15px;
+            min-height: 220px;
+            resize: vertical;
+            font-family: inherit;
+            transition: border 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        textarea::placeholder {
+            color: #737373;
+        }
+
+        button {
+            width: 100%;
+            background: #22c55e;
+            color: #000;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #404040;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+       .result {
+            margin-top: 40px;
+            padding: 32px;
+            background: #171717;
+            border-radius: 12px;
+            border: 1px solid #262626;
+            display: none;
+        }
+
+       .result.show {
+            display: block;
+        }
+
+       .score {
+            font-size: 72px;
+            font-weight: 800;
+            color: #22c55e;
+            margin-bottom: 24px;
+        }
+
+       .result-section {
+            margin-bottom: 24px;
+        }
+
+       .result-section h3 {
+            color: #fafafa;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+       .result-section p,.result-section li {
+            color: #d4d4d4;
+            font-size: 15px;
+        }
+
+        @media (max-width: 768px) {
+         .input-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ MatchCV</h1>
+            <p class="subtitle">Convertí el "no" en "¿cuánto querés ganar?"</p>
+        </div>
+
+        <div class="input-grid">
+            <div class="input-group">
+                <label>Adjuntar curriculum vitae</label>
+                <div class="file-input" onclick="document.getElementById('cvInput').click()">
+                    <input type="file" id="cvInput" accept=".pdf" style="display: none;" onchange="updateFileName(this)">
+                    <span id="fileName">📄 Cargar archivo PDF</span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Descripción del puesto</label>
+                <textarea id="job" placeholder="Ingrese la descripción completa del puesto al cual desea postular..."></textarea>
+            </div>
+        </div>
+
+        <button id="btnAnalizar" onclick="analizar()">Procesar análisis</button>
+
+        <div class="result" id="resultado"></div>
+    </div>
+
+    <script>
+        function updateFileName(input) {
+            const fileName = document.getElementById('fileName');
+            if (input.files.length > 0) {
+                fileName.textContent = '✅ ' + input.files[0].name;
+                fileName.style.color = '#22c55e';
+            } else {
+                fileName.textContent = '📄 Cargar archivo PDF';
+                fileName.style.color = '#fafafa';
+            }
+        }
+
+        async function analizar() {
+            const cvFile = document.getElementById('cvInput').files[0];
+            const jobDesc = document.getElementById('job').value;
+            const btn = document.getElementById('btnAnalizar');
+            const resultado = document.getElementById('resultado');
+
+            if (!cvFile) {
+                alert('Por favor, adjunte su curriculum vitae');
+                return;
+            }
+            if (!jobDesc.trim()) {
+                alert('Por favor, ingrese la descripción del puesto');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Analizando...';
+            resultado.classList.remove('show');
+
+            const formData = new FormData();
+            formData.append('file', cvFile);
+            formData.append('job_description', jobDesc);
+
+            try {
+                const response = await fetch('https://matchcv-production-8eeb.up.railway.app/analizar-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Error en el servidor');
+
+                const data = await response.json();
+
+                resultado.innerHTML = `
+                    <div class="score">${data.score}%</div>
+                    <div class="result-section">
+                        <h3>Fortalezas detectadas</h3>
+                        <p>${data.fortalezas || 'No se detectaron fortalezas específicas'}</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Brechas a mejorar</h3>
+                        <p>${data.gaps || 'No se detectaron brechas críticas'}</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Recomendaciones</h3>
+                        <p>${data.recomendaciones || 'Continúe fortaleciendo su perfil profesional'}</p>
+                    </div>
+                `;
+                resultado.classList.add('show');
+
+            } catch (error) {
+                alert('No se pudo conectar con el servidor. Verifique que el servicio se encuentre activo.');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Procesar análisis';
+            }
+        }
+    </script>
+</body>
+</html> 
