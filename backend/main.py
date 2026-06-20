@@ -89,6 +89,7 @@ def crear_trabajo(trabajo: Trabajo):
 
 # 9. ANALIZAR CV CON GROQ
 @app.post("/analizar-cv")
+@app.post("/analyze")
 async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
     try:
         await file.read()
