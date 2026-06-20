@@ -105,40 +105,25 @@ async def analizar_cv(file: UploadFile = File(...), descripcion: str = Form(""))
 
         if not cv_text.strip():
             raise HTTPException(status_code=400, detail="No se pudo extraer texto del CV. Si es PDF escaneado no funciona.")
+                prompt = f"""Sos un recruiter headhunter. Analizá este CV vs esta oferta laboral.
 
-        prompt = f"""Actuá como el recruiter headhunter más brutalmente honesto de la industria. Tu trabajo es decirle al candidato EXACTAMENTE por qué lo contratarían o no.
+OFERTA: {descripcion}
+CV: {cv_text}
 
-OFERTA LABORAL: {descripcion}
+IMPORTANTE: Adaptá tu análisis al rubro de la oferta. Si es IT, hablá de stacks. Si es salud, de matrículas. Si es TCP, de licencia ANAC. Si es ventas, de KPIs.
 
-CV COMPLETO DEL CANDIDATO:
-{cv_text}
-
-INSTRUCCIONES: Analizá el CV vs la oferta. Extraé datos REALES del CV: nombres de empresas, años, tecnologías, certificaciones, logros con números.
-
-DEVOLVÉ SOLO UN JSON VÁLIDO con esta estructura:
+DEVOLVÉ SOLO ESTE JSON. RESPETÁ LOS NOMBRES EXACTOS DE LAS KEYS:
 {{
-  "porcentaje_match": 78,
-  "veredicto": "Perfil sólido con 2 gaps técnicos clave",
-  "fortalezas_killer": ["Dato específico del CV 1 - por qué importa para esta oferta", "Dato específico del CV 2", "Dato específico del CV 3"],
-  "banderas_rojas": ["Skill que pide la oferta y NO aparece en el CV", "Experiencia que falta o gap temporal"],
-  "keywords_ats": {{
-    "encontradas": ["keyword1", "keyword2", "keyword3"],
-    "faltantes": ["keyword4", "keyword5"],
-    "score_ats": "72% - Los bots te filtran por las faltantes"
-  }},
-  "hack_cv": "1 cambio específico en el CV que subiría el match +15% en menos de 10 min",
-  "script_entrevista": "Qué responder si te preguntan por la debilidad más grande que detectaste",
-  "conclusion_brutal": "1 frase sin filtro: ¿Lo llaman o no y por qué?"
+  "match_percentage": 78,
+  "verdict": "Resumen de 1 línea: ¿por qué sí o por qué no?",
+  "strengths": ["Dato específico del CV que sirve para ESTA oferta", "Dato 2", "Dato 3"],
+  "gaps": ["Requisito de la oferta que NO aparece en el CV", "Otro gap crítico"],
+  "ats_score": "72% - Explicación corta de por qué",
+  "recommendations": ["Hack CV: 1 cambio específico para subir el match YA", "Qué decir en entrevista sobre el gap más grande", "Veredicto brutal: ¿Lo llaman o lo descartan y por qué?"]
 }}
 
-REGLAS OBLIGATORIAS:
-1. Usá SOLO datos que estén en el CV. Si no hay años de experiencia, no inventes.
-2. Si es para programador, hablá de stacks. Si es para ventas, hablá de KPIs. Adaptate al rubro.
-3. 'fortalezas_killer' = 3 balas que el candidato puede copiar directo a su CV.
-4. 'banderas_rojas' = Lo que haría que un recruiter descarte el CV en 6 segundos.
-5. 'hack_cv' = Acción concreta. Ejemplo: 'Agregá React al título porque la oferta lo pide 4 veces'.
-6. Prohibido frases genéricas. Si ponés 'buena experiencia' te desenchufamos.
-7. Si el match es <50%, sé directo: 'No aplican. Te faltan X, Y, Z años/herramientas'."""
+REGLAS: 1. Solo datos reales del CV 2. Sin frases genéricas 3. Si el CV no tiene nada que ver con la oferta, poné match_percentage bajo y explicalo en gaps."""
+
 
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
