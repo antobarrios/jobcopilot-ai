@@ -19,12 +19,12 @@
             line-height: 1.6;
         }
 
-      .container {
+    .container {
             max-width: 1200px;
             margin: 0 auto;
         }
 
-      .header {
+    .header {
             margin-bottom: 48px;
         }
 
@@ -37,19 +37,19 @@
             -webkit-text-fill-color: transparent;
         }
 
-      .subtitle {
+    .subtitle {
             color: #a3a3a3;
             font-size: 18px;
         }
 
-      .input-grid {
+    .input-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 24px;
             margin-bottom: 32px;
         }
 
-      .input-group {
+    .input-group {
             display: flex;
             flex-direction: column;
         }
@@ -62,7 +62,7 @@
             display: block;
         }
 
-      .file-input {
+    .file-input {
             background: #171717;
             border: 2px dashed #404040;
             border-radius: 12px;
@@ -72,7 +72,7 @@
             transition: all 0.3s;
         }
 
-      .file-input:hover {
+    .file-input:hover {
             border-color: #22c55e;
             background: #1a1a1a;
         }
@@ -129,7 +129,7 @@
             transform: none;
         }
 
-      .result {
+    .result {
             margin-top: 40px;
             padding: 32px;
             background: #171717;
@@ -138,34 +138,34 @@
             display: none;
         }
 
-      .result.show {
+    .result.show {
             display: block;
         }
 
-      .score {
+    .score {
             font-size: 72px;
             font-weight: 800;
             color: #22c55e;
             margin-bottom: 24px;
         }
 
-      .result-section {
+    .result-section {
             margin-bottom: 24px;
         }
 
-      .result-section h3 {
+    .result-section h3 {
             color: #fafafa;
             font-size: 20px;
             margin-bottom: 12px;
         }
 
-      .result-section p,.result-section li {
+    .result-section p,.result-section li {
             color: #d4d4d4;
             font-size: 15px;
         }
 
         @media (max-width: 768px) {
-        .input-grid {
+      .input-grid {
                 grid-template-columns: 1fr;
             }
             h1 {
@@ -246,8 +246,8 @@
 
                 const data = await response.json();
 
-                // FIX: Validar campos undefined/null y probar nombres alternativos
-                const score = data?.score?? 0;
+                // FIX: Espacio entre score y?? es obligatorio
+                const score = Number(data?.score) || 0;
                 const fortalezas = data?.fortalezas || data?.strengths || 'No se detectaron fortalezas específicas';
                 const gaps = data?.gaps || data?.brechas || data?.weaknesses || 'No se detectaron brechas críticas';
                 const recomendaciones = data?.recomendaciones || data?.recommendations || data?.suggestions || 'Continúe fortaleciendo su perfil profesional';
