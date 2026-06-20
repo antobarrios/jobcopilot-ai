@@ -37,6 +37,9 @@ def crear_db_y_tablas():
 app = FastAPI(title="MatchCV API v2 - Groq")
 from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI(title="MatchCV API v2 - Groq")
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://matchcv-navy.vercel.app"],
