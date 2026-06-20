@@ -105,25 +105,26 @@ async def analizar_cv(file: UploadFile = File(...), descripcion: str = Form(""))
 
         if not cv_text.strip():
             raise HTTPException(status_code=400, detail="No se pudo extraer texto del CV. Si es PDF escaneado no funciona.")
-                prompt = f"""Sos un recruiter headhunter. Analizá este CV vs esta oferta laboral.
 
-OFERTA: {descripcion}
-CV: {cv_text}
+        prompt = f"""Analizá este CV contra esta oferta laboral. Adaptá el análisis al rubro de la oferta: si es IT hablá de stacks, si es TCP de licencia ANAC, si es salud de matrículas.
 
-IMPORTANTE: Adaptá tu análisis al rubro de la oferta. Si es IT, hablá de stacks. Si es salud, de matrículas. Si es TCP, de licencia ANAC. Si es ventas, de KPIs.
+OFERTA LABORAL:
+{descripcion}
 
-DEVOLVÉ SOLO ESTE JSON. RESPETÁ LOS NOMBRES EXACTOS DE LAS KEYS:
+CV DEL CANDIDATO:
+{cv_text}
+
+DEBERÁS DEVOLVER ÚNICAMENTE UN JSON VÁLIDO CON EXACTAMENTE ESTAS KEYS:
 {{
   "match_percentage": 78,
-  "verdict": "Resumen de 1 línea: ¿por qué sí o por qué no?",
-  "strengths": ["Dato específico del CV que sirve para ESTA oferta", "Dato 2", "Dato 3"],
-  "gaps": ["Requisito de la oferta que NO aparece en el CV", "Otro gap crítico"],
-  "ats_score": "72% - Explicación corta de por qué",
-  "recommendations": ["Hack CV: 1 cambio específico para subir el match YA", "Qué decir en entrevista sobre el gap más grande", "Veredicto brutal: ¿Lo llaman o lo descartan y por qué?"]
+  "verdict": "Resumen brutal de 1 línea: ¿por qué sí o por qué no?",
+  "strengths": ["Dato específico del CV que sirve para ESTA oferta", "Otro dato fuerte", "Otro más"],
+  "gaps": ["Requisito clave de la oferta que NO aparece en el CV", "Otro gap crítico"],
+  "ats_score": "72% - Explicación corta de por qué los bots te filtran o no",
+  "recommendations": ["Hack CV: 1 cambio específico para subir el match +15% YA", "Qué decir en entrevista sobre el gap más grande", "Veredicto final: ¿Lo llaman o lo descartan y por qué?"]
 }}
 
-REGLAS: 1. Solo datos reales del CV 2. Sin frases genéricas 3. Si el CV no tiene nada que ver con la oferta, poné match_percentage bajo y explicalo en gaps."""
-
+REGLAS: 1. Solo datos reales del CV 2. Sin frases genéricas tipo 'buena experiencia' 3. Si el CV no tiene nada que ver, poné match_percentage bajo y explicalo."""
 
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
