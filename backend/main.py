@@ -1,5 +1,7 @@
-# deploy 2026-06-17 MIGRADO A GROQ - JobCopilot funcionando
+# deploy 2026-06-20 MATCHCV FINAL - GROQ + PDF READER
 import os
+import json
+import io
 
 # === PATCH PROXIES ANTES DE CUALQUIER IMPORT DE GROQ ===
 for var in ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy']:
@@ -8,11 +10,12 @@ for var in ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
-import json
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 from typing import Optional
-from groq import Groq # AHORA SÍ, después del patch
+from groq import Groq
+import PyPDF2
 
 # 1. TABLA TRABAJO
 class Trabajo(SQLModel, table=True):
@@ -35,10 +38,6 @@ def crear_db_y_tablas():
 
 # 4. APP FASTAPI
 app = FastAPI(title="MatchCV API v2 - Groq")
-from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI(title="MatchCV API v2 - Groq")
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,6 +46,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # 5. CLIENTE GROQ
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -87,12 +87,25 @@ def crear_trabajo(trabajo: Trabajo):
         session.refresh(trabajo)
         return trabajo
 
-# 9. ANALIZAR CV CON GROQ
+# 9. ANALIZAR CV CON GROQ - VERSIÓN RECRUITER SALVAJE
 @app.post("/analizar-cv")
 @app.post("/analyze")
-async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
+async def analizar_cv(file: UploadFile = File(...), descripcion: str = Form("")):
     try:
-        await file.read()
+        contenido_cv = await file.read()
+
+        # Extraer texto del PDF o TXT
+        cv_text = ""
+        if file.filename.lower().endswith('.pdf'):
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(contenido_cv))
+            for page in pdf_reader.pages:
+                cv_text += page.extract_text() or ""
+        else:
+            cv_text = contenido_cv.decode('utf-8', errors='ignore')
+
+        if not cv_text.strip():
+            raise HTTPException(status_code=400, detail="No se pudo extraer texto del CV. Si es PDF escaneado no funciona.")
+
         prompt = f"""Actuá como el recruiter headhunter más brutalmente honesto de la industria. Tu trabajo es decirle al candidato EXACTAMENTE por qué lo contratarían o no.
 
 OFERTA LABORAL: {descripcion}
@@ -103,19 +116,11 @@ CV COMPLETO DEL CANDIDATO:
 INSTRUCCIONES: Analizá el CV vs la oferta. Extraé datos REALES del CV: nombres de empresas, años, tecnologías, certificaciones, logros con números.
 
 DEVOLVÉ SOLO UN JSON VÁLIDO con esta estructura:
-
 {{
   "porcentaje_match": 78,
   "veredicto": "Perfil sólido con 2 gaps técnicos clave",
-  "fortalezas_killer": [
-    "Dato específico del CV 1 - por qué importa para esta oferta",
-    "Dato específico del CV 2 - qué problema resuelve de la empresa", 
-    "Dato específico del CV 3 - ventaja competitiva vs otros candidatos"
-  ],
-  "banderas_rojas": [
-    "Skill/herramienta que pide la oferta y NO aparece en el CV",
-    "Experiencia que falta o gap temporal sin explicar"
-  ],
+  "fortalezas_killer": ["Dato específico del CV 1 - por qué importa para esta oferta", "Dato específico del CV 2", "Dato específico del CV 3"],
+  "banderas_rojas": ["Skill que pide la oferta y NO aparece en el CV", "Experiencia que falta o gap temporal"],
   "keywords_ats": {{
     "encontradas": ["keyword1", "keyword2", "keyword3"],
     "faltantes": ["keyword4", "keyword5"],
@@ -134,20 +139,25 @@ REGLAS OBLIGATORIAS:
 5. 'hack_cv' = Acción concreta. Ejemplo: 'Agregá React al título porque la oferta lo pide 4 veces'.
 6. Prohibido frases genéricas. Si ponés 'buena experiencia' te desenchufamos.
 7. Si el match es <50%, sé directo: 'No aplican. Te faltan X, Y, Z años/herramientas'."""
+
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
+            temperature=0.2,
             response_format={"type": "json_object"}
         )
+
         result_text = chat_completion.choices[0].message.content
         return json.loads(result_text)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error Groq: {str(e)}")
+        print(f"ERROR DETALLE: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al analizar CV: {str(e)}")
 
 # 10. MODELOS GROQ DISPONIBLES
 @app.get("/modelos")
 def listar_modelos():
-    return ["mixtral-8x7b-32768", "llama2-70b-4096", "gemma-7b-it"]
+    return ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"]
 
 # 11. ROOT
 @app.get("/")
