@@ -93,10 +93,47 @@ def crear_trabajo(trabajo: Trabajo):
 async def analizar_cv(file: UploadFile = File(...), vacante: str = ""):
     try:
         await file.read()
-        prompt = f"""Sos un recruiter senior. Analiza este CV para la vacante: {vacante}.
-        El archivo se llama: {file.filename}
-        Devolve SOLO un JSON válido: {{"score": 75, "fortalezas": ["..."], "a_mejorar": ["..."], "consejo_clave": "..."}}"""
+        prompt = f"""Actuá como el recruiter headhunter más brutalmente honesto de la industria. Tu trabajo es decirle al candidato EXACTAMENTE por qué lo contratarían o no.
 
+OFERTA LABORAL: {descripcion}
+
+CV COMPLETO DEL CANDIDATO:
+{cv_text}
+
+INSTRUCCIONES: Analizá el CV vs la oferta. Extraé datos REALES del CV: nombres de empresas, años, tecnologías, certificaciones, logros con números.
+
+DEVOLVÉ SOLO UN JSON VÁLIDO con esta estructura:
+
+{{
+  "porcentaje_match": 78,
+  "veredicto": "Perfil sólido con 2 gaps técnicos clave",
+  "fortalezas_killer": [
+    "Dato específico del CV 1 - por qué importa para esta oferta",
+    "Dato específico del CV 2 - qué problema resuelve de la empresa", 
+    "Dato específico del CV 3 - ventaja competitiva vs otros candidatos"
+  ],
+  "banderas_rojas": [
+    "Skill/herramienta que pide la oferta y NO aparece en el CV",
+    "Experiencia que falta o gap temporal sin explicar"
+  ],
+  "keywords_ats": {{
+    "encontradas": ["keyword1", "keyword2", "keyword3"],
+    "faltantes": ["keyword4", "keyword5"],
+    "score_ats": "72% - Los bots te filtran por las faltantes"
+  }},
+  "hack_cv": "1 cambio específico en el CV que subiría el match +15% en menos de 10 min",
+  "script_entrevista": "Qué responder si te preguntan por la debilidad más grande que detectaste",
+  "conclusion_brutal": "1 frase sin filtro: ¿Lo llaman o no y por qué?"
+}}
+
+REGLAS OBLIGATORIAS:
+1. Usá SOLO datos que estén en el CV. Si no hay años de experiencia, no inventes.
+2. Si es para programador, hablá de stacks. Si es para ventas, hablá de KPIs. Adaptate al rubro.
+3. 'fortalezas_killer' = 3 balas que el candidato puede copiar directo a su CV.
+4. 'banderas_rojas' = Lo que haría que un recruiter descarte el CV en 6 segundos.
+5. 'hack_cv' = Acción concreta. Ejemplo: 'Agregá React al título porque la oferta lo pide 4 veces'.
+6. Prohibido frases genéricas. Si ponés 'buena experiencia' te desenchufamos.
+7. Si el match es <50%, sé directo: 'No aplican. Te faltan X, Y, Z años/herramientas'."""
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
