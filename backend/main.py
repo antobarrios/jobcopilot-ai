@@ -35,7 +35,15 @@ def crear_db_y_tablas():
 
 # 4. APP FASTAPI
 app = FastAPI(title="MatchCV API v2 - Groq")
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://matchcv-navy.vercel.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # 5. CLIENTE GROQ
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
