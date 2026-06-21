@@ -79,7 +79,6 @@
             outline: 3px solid #22c55e;
         }
 
-        /* El input real está invisible pero accesible */
         #cvInput {
             position: absolute;
             width: 100%;
@@ -171,12 +170,68 @@
             display: block;
         }
 
-       .score {
-            font-size: 72px;
-            font-weight: 800;
-            color: #22c55e;
-            margin-bottom: 24px;
+        /* MATCH SCORE ANIMADO NUEVO */
+       .match-container {
+            text-align: center;
+            margin: 20px 0 32px 0;
         }
+
+       .score-circle {
+            position: relative;
+            display: inline-block;
+            width: 140px;
+            height: 140px;
+        }
+
+       .score-circle svg {
+            width: 140px;
+            height: 140px;
+        }
+
+       .bg-circle {
+            fill: none;
+            stroke: #262626;
+            stroke-width: 10;
+        }
+
+       .progress-circle {
+            fill: none;
+            stroke: #22c55e;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke-dasharray: 408.407; /* 2 * pi * 65 */
+            stroke-dashoffset: 408.407;
+            transition: stroke-dashoffset 1.5s ease-out;
+        }
+
+       .score-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 42px;
+            font-weight: 800;
+            color: #fafafa;
+        }
+
+       .score-number span {
+            font-size: 20px;
+            color: #a3a3a3;
+        }
+
+       .score-label {
+            margin-top: 16px;
+            color: #d4d4d4;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        /* Colores dinámicos según score */
+       .score-low.progress-circle { stroke: #ef4444; }
+       .score-mid.progress-circle { stroke: #f59e0b; }
+       .score-high.progress-circle { stroke: #22c55e; }
 
        .result-section {
             margin-bottom: 24px;
@@ -205,11 +260,28 @@
             border: 0;
         }
 
+        @media (prefers-reduced-motion: reduce) {
+           .progress-circle {
+                transition: none;
+            }
+        }
+
         @media (max-width: 768px) {
            .input-grid {
                 grid-template-columns: 1fr;
             }
             h1 {
+                font-size: 36px;
+            }
+           .score-circle {
+                width: 120px;
+                height: 120px;
+            }
+           .score-circle svg {
+                width: 120px;
+                height: 120px;
+            }
+           .score-number {
                 font-size: 36px;
             }
         }
@@ -282,6 +354,35 @@
             }
         }
 
+        // NUEVA FUNCIÓN PARA ANIMAR EL SCORE
+        function animarScore(porcentaje) {
+            const circle = document.querySelector('.progress-circle');
+            const number = document.querySelector('.score-number');
+            const container = document.querySelector('.score-circle');
+
+            if (!circle ||!number ||!container) return;
+
+            // Color según score
+            container.classList.remove('score-low', 'score-mid', 'score-high');
+            if (porcentaje < 50) container.classList.add('score-low');
+            else if (porcentaje < 80) container.classList.add('score-mid');
+            else container.classList.add('score-high');
+
+            // Animar círculo - 408.407 es 2*pi*65
+            const offset = 408.407 - (408.407 * porcentaje / 100);
+            setTimeout(() => {
+                circle.style.strokeDashoffset = offset;
+            }, 100);
+
+            // Animar número de 0 al % real
+            let current = 0;
+            const timer = setInterval(() => {
+                current++;
+                number.innerHTML = current + '<span>%</span>';
+                if (current >= porcentaje) clearInterval(timer);
+            }, 20);
+        }
+
         async function analizar() {
             const cvFile = document.getElementById('cvInput').files[0];
             const jobDesc = document.getElementById('job').value;
@@ -304,7 +405,7 @@
             btn.textContent = 'Analizando...';
             resultado.classList.remove('show');
             btnLeer.style.display = 'none';
-            window.speechSynthesis.cancel(); // Corta lectura anterior
+            window.speechSynthesis.cancel();
 
             const formData = new FormData();
             formData.append('file', cvFile);
@@ -327,12 +428,22 @@
 
                 ultimoResultado = {score, fortalezas, gaps, recomendaciones, verdict};
 
-                // CLAVE ACCESIBILIDAD: role alert hace que el lector lo lea automáticamente
                 resultado.setAttribute('role', 'alert');
                 resultado.setAttribute('aria-live', 'assertive');
 
+                // HTML NUEVO CON MATCH SCORE ANIMADO
                 resultado.innerHTML = `
-                    <div class="score" aria-label="Puntaje de compatibilidad: ${score} por ciento">${score}%</div>
+                    <div class="match-container">
+                        <div class="score-circle" aria-label="Porcentaje de compatibilidad: ${score} por ciento">
+                            <svg width="140" height="140">
+                                <circle class="bg-circle" cx="70" cy="70" r="65" />
+                                <circle class="progress-circle" cx="70" cy="70" r="65" />
+                            </svg>
+                            <div class="score-number">0<span>%</span></div>
+                        </div>
+                        <p class="score-label">Match con el puesto</p>
+                    </div>
+
                     <div class="result-section">
                         <h3>Fortalezas detectadas</h3>
                         <p>${fortalezas}</p>
@@ -350,7 +461,9 @@
                 resultado.classList.add('show');
                 btnLeer.style.display = 'block';
 
-                // Focus al resultado para que el lector empiece ahí
+                // LANZAR ANIMACIÓN DESPUÉS DE MOSTRAR
+                setTimeout(() => animarScore(score), 200);
+
                 resultado.focus();
 
             } catch (error) {
@@ -380,7 +493,6 @@
             window.speechSynthesis.speak(speech);
         }
 
-        // Permitir activar file input con Enter/Espacio
         document.querySelector('.file-input').addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
