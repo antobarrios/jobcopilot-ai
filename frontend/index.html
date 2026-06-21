@@ -3,82 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatchCV - Análisis de CV Accesible</title>
+    <title>MatchCV</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0a; color: #fafafa; font-family: 'Inter', sans-serif; padding: 40px 20px; line-height: 1.6; }
-       .container { max-width: 1200px; margin: 0 auto; }
-       .header { margin-bottom: 48px; }
+        body { background: #0a0a0a; color: #fafafa; font-family: 'Inter', sans-serif; padding: 40px 20px; }
+     .container { max-width: 1200px; margin: 0 auto; }
         h1 { font-size: 52px; font-weight: 700; margin-bottom: 12px; background: linear-gradient(135deg, #22c55e 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-       .subtitle { color: #a3a3a3; font-size: 18px; }
-       .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
-       .input-group { display: flex; flex-direction: column; }
-        label { color: #e5e5e5; font-size: 16px; font-weight: 600; margin-bottom: 12px; display: block; }
-       .file-input { background: #171717; border: 2px dashed #404040; border-radius: 12px; padding: 60px 20px; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; }
-       .file-input:hover,.file-input:focus-within { border-color: #22c55e; background: #1a1a1a; outline: 3px solid #22c55e; }
+     .subtitle { color: #a3a3a3; font-size: 18px; margin-bottom: 48px; }
+     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+     .input-group { display: flex; flex-direction: column; }
+        label { color: #e5e5e5; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+     .file-input { background: #171717; border: 2px dashed #404040; border-radius: 12px; padding: 60px 20px; cursor: pointer; text-align: center; position: relative; }
         #cvInput { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
-        #fileName { color: #fafafa; font-size: 16px; display: block; pointer-events: none; }
-        textarea { background: #171717; border: 1px solid #404040; border-radius: 12px; padding: 18px; color: #fafafa; font-size: 15px; min-height: 220px; resize: vertical; font-family: inherit; transition: border 0.2s; }
-        textarea:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3); }
-        textarea::placeholder { color: #737373; }
-        button { width: 100%; background: #22c55e; color: #000; border: none; padding: 18px; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        button:hover { background: #16a34a; transform: translateY(-2px); }
-        button:focus { outline: 3px solid #facc15; outline-offset: 2px; }
-        button:disabled { background: #404040; cursor: not-allowed; transform: none; }
-       .btn-secondary { background: #10b981; margin-top: 20px; }
-       .btn-secondary:hover { background: #059669; }
-       .result { margin-top: 40px; padding: 32px; background: #171717; border-radius: 12px; border: 1px solid #262626; display: none; }
-       .result.show { display: block; }
-       .match-container { text-align: center; margin: 20px 0 32px 0; }
-       .score-circle { position: relative; display: inline-block; width: 140px; height: 140px; }
-       .score-circle svg { width: 140px; height: 140px; }
-       .bg-circle { fill: none; stroke: #262626; stroke-width: 10; }
-       .progress-circle { fill: none; stroke: #22c55e; stroke-width: 10; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 408.407; stroke-dashoffset: 408.407; transition: stroke-dashoffset 1.5s ease-out; }
-       .score-number { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; font-weight: 800; color: #fafafa; }
-       .score-number span { font-size: 20px; color: #a3a3a3; }
-       .score-label { margin-top: 16px; color: #d4d4d4; font-weight: 600; font-size: 16px; }
-       .score-low { stroke: #ef4444; }
-       .score-mid { stroke: #f59e0b; }
-       .score-high { stroke: #22c55e; }
-       .result-section { margin-bottom: 24px; }
-       .result-section h3 { color: #fafafa; font-size: 20px; margin-bottom: 12px; }
-       .result-section p { color: #d4d4d4; font-size: 15px; }
-        @media (max-width: 768px) {
-           .input-grid { grid-template-columns: 1fr; }
-            h1 { font-size: 36px; }
-           .score-circle { width: 120px; height: 120px; }
-           .score-circle svg { width: 120px; height: 120px; }
-           .score-number { font-size: 36px; }
-        }
+        #fileName { color: #fafafa; font-size: 16px; pointer-events: none; }
+        textarea { background: #171717; border: 1px solid #404040; border-radius: 12px; padding: 18px; color: #fafafa; font-size: 15px; min-height: 220px; resize: vertical; }
+        button { width: 100%; background: #22c55e; color: #000; border: none; padding: 18px; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; }
+        button:disabled { background: #404040; }
+     .result { margin-top: 40px; padding: 32px; background: #171717; border-radius: 12px; border: 1px solid #262626; display: none; }
+     .result.show { display: block; }
+     .match-container { text-align: center; margin: 20px 0 32px 0; }
+     .score-circle { position: relative; display: inline-block; width: 140px; height: 140px; }
+     .score-circle svg { width: 140px; height: 140px; }
+     .bg-circle { fill: none; stroke: #262626; stroke-width: 10; }
+     .progress-circle { fill: none; stroke: #22c55e; stroke-width: 10; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 408.407; stroke-dashoffset: 408.407; transition: stroke-dashoffset 1.5s ease-out; }
+     .score-number { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; font-weight: 800; }
+     .score-number span { font-size: 20px; color: #a3a3a3; }
+     .score-label { margin-top: 16px; color: #d4d4d4; font-weight: 600; }
+     .score-low { stroke: #ef4444; }
+     .score-mid { stroke: #f59e0b; }
+     .score-high { stroke: #22c55e; }
+     .result-section { margin-bottom: 24px; }
+     .result-section h3 { color: #fafafa; font-size: 20px; margin-bottom: 12px; }
+     .result-section p { color: #d4d4d4; font-size: 15px; }
+        @media (max-width: 768px) {.input-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <main class="container">
-        <header class="header">
-            <h1>⚡ MatchCV</h1>
-            <p class="subtitle">Convertí el "no" en "¿cuánto querés ganar?"</p>
-        </header>
-        <section>
-            <div class="input-grid">
-                <div class="input-group">
-                    <label for="cvInput">1. Adjuntar curriculum vitae en PDF</label>
-                    <div class="file-input">
-                        <input type="file" id="cvInput" accept=".pdf" onchange="updateFileName(this)">
-                        <span id="fileName">📄 Cargar archivo PDF</span>
-                    </div>
-                <div class="input-group">
-                    <label for="job">2. Descripción del puesto</label>
-                    <textarea id="job" placeholder="Ingrese la descripción completa del puesto..."></textarea>
+        <h1>⚡ MatchCV</h1>
+        <p class="subtitle">Convertí el "no" en "¿cuánto querés ganar?"</p>
+        <div class="input-grid">
+            <div class="input-group">
+                <label>1. Adjuntar CV en PDF</label>
+                <div class="file-input">
+                    <input type="file" id="cvInput" accept=".pdf" onchange="updateFileName(this)">
+                    <span id="fileName">📄 Cargar archivo PDF</span>
                 </div>
-            <button id="btnAnalizar" onclick="analizar()">Procesar análisis</button>
-        </section>
-        <section>
-            <div class="result" id="resultado"></div>
-            <button id="btnLeer" class="btn-secondary" style="display:none;" onclick="leerResultado()">🔊 Escuchar resultado</button>
-        </section>
+            </div>
+            <div class="input-group">
+                <label>2. Descripción del puesto</label>
+                <textarea id="job" placeholder="Ingrese la descripción completa del puesto..."></textarea>
+            </div>
+        </div>
+        <button id="btnAnalizar" onclick="analizar()">Procesar análisis</button>
+        <div class="result" id="resultado"></div>
     </main>
     <script>
-        let ultimoResultado = {};
         function updateFileName(input) {
             const fileName = document.getElementById('fileName');
             if (input.files.length > 0) {
@@ -90,7 +70,6 @@
             const circle = document.querySelector('.progress-circle');
             const number = document.querySelector('.score-number');
             if (!circle ||!number) return;
-            // FIX: Clase va en el circle, no en container
             circle.classList.remove('score-low', 'score-mid', 'score-high');
             if (porcentaje < 50) circle.classList.add('score-low');
             else if (porcentaje < 80) circle.classList.add('score-mid');
@@ -109,7 +88,6 @@
             const jobDesc = document.getElementById('job').value;
             const btn = document.getElementById('btnAnalizar');
             const resultado = document.getElementById('resultado');
-            const btnLeer = document.getElementById('btnLeer');
             if (!cvFile ||!jobDesc.trim()) {
                 alert('Faltan datos');
                 return;
@@ -126,9 +104,7 @@
                     body: formData
                 });
                 const data = await response.json();
-                console.log('Data Railway:', data);
-                const score = Number(data?.score) || 75;
-                ultimoResultado = {score, fortalezas: data?.fortalezas, gaps: data?.gaps};
+                const score = Number(data?.score) || 0;
                 resultado.innerHTML = `
                     <div class="match-container">
                         <div class="score-circle">
@@ -140,25 +116,17 @@
                         </div>
                         <p class="score-label">Match con el puesto</p>
                     </div>
-                    <div class="result-section"><h3>Fortalezas</h3><p>${data?.fortalezas || 'No detectadas'}</p></div>
-                    <div class="result-section"><h3>Brechas</h3><p>${data?.gaps || 'No detectadas'}</p></div>
+                    <div class="result-section"><h3>Fortalezas detectadas</h3><p>${data?.fortalezas || 'No detectadas'}</p></div>
+                    <div class="result-section"><h3>Brechas a mejorar</h3><p>${data?.gaps || 'No detectadas'}</p></div>
                 `;
                 resultado.classList.add('show');
-                btnLeer.style.display = 'block';
                 setTimeout(() => animarScore(score), 200);
             } catch (error) {
                 alert('Error de servidor');
-                console.error(error);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Procesar análisis';
             }
-        }
-        function leerResultado() {
-            const {score} = ultimoResultado;
-            const speech = new SpeechSynthesisUtterance(`Tu puntaje es ${score} por ciento`);
-            speech.lang = 'es-AR';
-            window.speechSynthesis.speak(speech);
         }
     </script>
 </body>
