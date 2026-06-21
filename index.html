@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatchCV - Análisis de CV</title>
+    <title>MatchCV - Análisis de CV Accesible</title>
     <style>
         * {
             margin: 0;
@@ -19,12 +19,12 @@
             line-height: 1.6;
         }
 
-    .container {
+       .container {
             max-width: 1200px;
             margin: 0 auto;
         }
 
-    .header {
+       .header {
             margin-bottom: 48px;
         }
 
@@ -37,19 +37,19 @@
             -webkit-text-fill-color: transparent;
         }
 
-    .subtitle {
+       .subtitle {
             color: #a3a3a3;
             font-size: 18px;
         }
 
-    .input-grid {
+       .input-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 24px;
             margin-bottom: 32px;
         }
 
-    .input-group {
+       .input-group {
             display: flex;
             flex-direction: column;
         }
@@ -62,7 +62,7 @@
             display: block;
         }
 
-    .file-input {
+       .file-input {
             background: #171717;
             border: 2px dashed #404040;
             border-radius: 12px;
@@ -70,17 +70,31 @@
             cursor: pointer;
             text-align: center;
             transition: all 0.3s;
+            position: relative;
         }
 
-    .file-input:hover {
+       .file-input:hover,.file-input:focus-within {
             border-color: #22c55e;
             background: #1a1a1a;
+            outline: 3px solid #22c55e;
+        }
+
+        /* El input real está invisible pero accesible */
+        #cvInput {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
         }
 
         #fileName {
             color: #fafafa;
             font-size: 16px;
             display: block;
+            pointer-events: none;
         }
 
         textarea {
@@ -99,6 +113,7 @@
         textarea:focus {
             outline: none;
             border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
         }
 
         textarea::placeholder {
@@ -123,13 +138,27 @@
             transform: translateY(-2px);
         }
 
+        button:focus {
+            outline: 3px solid #facc15;
+            outline-offset: 2px;
+        }
+
         button:disabled {
             background: #404040;
             cursor: not-allowed;
             transform: none;
         }
 
-    .result {
+       .btn-secondary {
+            background: #10b981;
+            margin-top: 20px;
+        }
+
+       .btn-secondary:hover {
+            background: #059669;
+        }
+
+       .result {
             margin-top: 40px;
             padding: 32px;
             background: #171717;
@@ -138,34 +167,46 @@
             display: none;
         }
 
-    .result.show {
+       .result.show {
             display: block;
         }
 
-    .score {
+       .score {
             font-size: 72px;
             font-weight: 800;
             color: #22c55e;
             margin-bottom: 24px;
         }
 
-    .result-section {
+       .result-section {
             margin-bottom: 24px;
         }
 
-    .result-section h3 {
+       .result-section h3 {
             color: #fafafa;
             font-size: 20px;
             margin-bottom: 12px;
         }
 
-    .result-section p,.result-section li {
+       .result-section p,.result-section li {
             color: #d4d4d4;
             font-size: 15px;
         }
 
+       .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         @media (max-width: 768px) {
-      .input-grid {
+           .input-grid {
                 grid-template-columns: 1fr;
             }
             h1 {
@@ -175,33 +216,61 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <main class="container">
+        <header class="header">
             <h1>⚡ MatchCV</h1>
             <p class="subtitle">Convertí el "no" en "¿cuánto querés ganar?"</p>
-        </div>
+        </header>
 
-        <div class="input-grid">
-            <div class="input-group">
-                <label>Adjuntar curriculum vitae</label>
-                <div class="file-input" onclick="document.getElementById('cvInput').click()">
-                    <input type="file" id="cvInput" accept=".pdf" style="display: none;" onchange="updateFileName(this)">
-                    <span id="fileName">📄 Cargar archivo PDF</span>
+        <section aria-label="Formulario de análisis de currículum">
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="cvInput">1. Adjuntar curriculum vitae en PDF</label>
+                    <div class="file-input">
+                        <input
+                            type="file"
+                            id="cvInput"
+                            accept=".pdf"
+                            aria-label="Seleccionar archivo PDF de tu currículum. Presioná Enter para abrir el explorador de archivos"
+                            onchange="updateFileName(this)">
+                        <span id="fileName" aria-live="polite">📄 Cargar archivo PDF</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="job">2. Descripción del puesto</label>
+                    <textarea
+                        id="job"
+                        aria-label="Pegá acá la descripción completa del puesto al cual querés postular"
+                        placeholder="Ingrese la descripción completa del puesto al cual desea postular..."></textarea>
                 </div>
             </div>
 
-            <div class="input-group">
-                <label>Descripción del puesto</label>
-                <textarea id="job" placeholder="Ingrese la descripción completa del puesto al cual desea postular..."></textarea>
-            </div>
-        </div>
+            <button
+                id="btnAnalizar"
+                onclick="analizar()"
+                aria-label="Procesar análisis de mi currículum contra la oferta laboral">
+                Procesar análisis
+            </button>
+        </section>
 
-        <button id="btnAnalizar" onclick="analizar()">Procesar análisis</button>
+        <section aria-label="Resultados del análisis">
+            <div class="result" id="resultado" role="region" aria-label="Resultados del análisis de currículum"></div>
 
-        <div class="result" id="resultado"></div>
-    </div>
+            <button
+                id="btnLeer"
+                class="btn-secondary"
+                style="display:none;"
+                onclick="leerResultado()"
+                aria-label="Escuchar los resultados del análisis en voz alta">
+                🔊 Escuchar resultado
+            </button>
+        </section>
+    </main>
 
     <script>
+        let ultimoResultado = {};
+
         function updateFileName(input) {
             const fileName = document.getElementById('fileName');
             if (input.files.length > 0) {
@@ -218,19 +287,24 @@
             const jobDesc = document.getElementById('job').value;
             const btn = document.getElementById('btnAnalizar');
             const resultado = document.getElementById('resultado');
+            const btnLeer = document.getElementById('btnLeer');
 
             if (!cvFile) {
                 alert('Por favor, adjunte su curriculum vitae');
+                document.getElementById('cvInput').focus();
                 return;
             }
             if (!jobDesc.trim()) {
                 alert('Por favor, ingrese la descripción del puesto');
+                document.getElementById('job').focus();
                 return;
             }
 
             btn.disabled = true;
             btn.textContent = 'Analizando...';
             resultado.classList.remove('show');
+            btnLeer.style.display = 'none';
+            window.speechSynthesis.cancel(); // Corta lectura anterior
 
             const formData = new FormData();
             formData.append('file', cvFile);
@@ -243,17 +317,22 @@
                 });
 
                 if (!response.ok) throw new Error('Error en el servidor');
-
                 const data = await response.json();
 
-                // FIX: Espacio entre score y?? es obligatorio
                 const score = Number(data?.score) || 0;
                 const fortalezas = data?.fortalezas || data?.strengths || 'No se detectaron fortalezas específicas';
                 const gaps = data?.gaps || data?.brechas || data?.weaknesses || 'No se detectaron brechas críticas';
-                const recomendaciones = data?.recomendaciones || data?.recommendations || data?.suggestions || 'Continúe fortaleciendo su perfil profesional';
+                const recomendaciones = data?.recomendaciones || data?.recommendations || 'Continúe fortaleciendo su perfil profesional';
+                const verdict = data?.verdict || '';
+
+                ultimoResultado = {score, fortalezas, gaps, recomendaciones, verdict};
+
+                // CLAVE ACCESIBILIDAD: role alert hace que el lector lo lea automáticamente
+                resultado.setAttribute('role', 'alert');
+                resultado.setAttribute('aria-live', 'assertive');
 
                 resultado.innerHTML = `
-                    <div class="score">${score}%</div>
+                    <div class="score" aria-label="Puntaje de compatibilidad: ${score} por ciento">${score}%</div>
                     <div class="result-section">
                         <h3>Fortalezas detectadas</h3>
                         <p>${fortalezas}</p>
@@ -266,8 +345,13 @@
                         <h3>Recomendaciones</h3>
                         <p>${recomendaciones}</p>
                     </div>
+                    ${verdict? `<div class="result-section"><h3>Veredicto</h3><p>${verdict}</p></div>` : ''}
                 `;
                 resultado.classList.add('show');
+                btnLeer.style.display = 'block';
+
+                // Focus al resultado para que el lector empiece ahí
+                resultado.focus();
 
             } catch (error) {
                 alert('No se pudo conectar con el servidor. Verifique que el servicio se encuentre activo.');
@@ -277,6 +361,32 @@
                 btn.textContent = 'Procesar análisis';
             }
         }
+
+        function leerResultado() {
+            const {score, fortalezas, gaps, recomendaciones, verdict} = ultimoResultado;
+            const texto = `
+                Resultado del análisis de MatchCV.
+                Tu puntaje de compatibilidad es ${score} por ciento.
+                ${verdict}.
+                Fortalezas detectadas: ${fortalezas}.
+                Brechas a mejorar: ${gaps}.
+                Recomendaciones: ${recomendaciones}.
+            `;
+            const speech = new SpeechSynthesisUtterance(texto);
+            speech.lang = 'es-AR';
+            speech.rate = 0.9;
+            speech.pitch = 1;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(speech);
+        }
+
+        // Permitir activar file input con Enter/Espacio
+        document.querySelector('.file-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                document.getElementById('cvInput').click();
+            }
+        });
     </script>
 </body>
 </html>
