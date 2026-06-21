@@ -7,34 +7,35 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0a; color: #fafafa; font-family: 'Inter', sans-serif; padding: 40px 20px; }
-     .container { max-width: 1200px; margin: 0 auto; }
+  .container { max-width: 1200px; margin: 0 auto; }
         h1 { font-size: 52px; font-weight: 700; margin-bottom: 12px; background: linear-gradient(135deg, #22c55e 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-     .subtitle { color: #a3a3a3; font-size: 18px; margin-bottom: 48px; }
-     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
-     .input-group { display: flex; flex-direction: column; }
+  .subtitle { color: #a3a3a3; font-size: 18px; margin-bottom: 48px; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+  .input-group { display: flex; flex-direction: column; }
         label { color: #e5e5e5; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-     .file-input { background: #171717; border: 2px dashed #404040; border-radius: 12px; padding: 60px 20px; cursor: pointer; text-align: center; position: relative; }
+  .file-input { background: #171717; border: 2px dashed #404040; border-radius: 12px; padding: 60px 20px; cursor: pointer; text-align: center; position: relative; }
         #cvInput { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
         #fileName { color: #fafafa; font-size: 16px; pointer-events: none; }
         textarea { background: #171717; border: 1px solid #404040; border-radius: 12px; padding: 18px; color: #fafafa; font-size: 15px; min-height: 220px; resize: vertical; }
         button { width: 100%; background: #22c55e; color: #000; border: none; padding: 18px; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; }
         button:disabled { background: #404040; }
-     .result { margin-top: 40px; padding: 32px; background: #171717; border-radius: 12px; border: 1px solid #262626; display: none; }
-     .result.show { display: block; }
-     .match-container { text-align: center; margin: 20px 0 32px 0; }
-     .score-circle { position: relative; display: inline-block; width: 140px; height: 140px; }
-     .score-circle svg { width: 140px; height: 140px; }
-     .bg-circle { fill: none; stroke: #262626; stroke-width: 10; }
-     .progress-circle { fill: none; stroke: #22c55e; stroke-width: 10; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 408.407; stroke-dashoffset: 408.407; transition: stroke-dashoffset 1.5s ease-out; }
-     .score-number { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; font-weight: 800; }
-     .score-number span { font-size: 20px; color: #a3a3a3; }
-     .score-label { margin-top: 16px; color: #d4d4d4; font-weight: 600; }
-     .score-low { stroke: #ef4444; }
-     .score-mid { stroke: #f59e0b; }
-     .score-high { stroke: #22c55e; }
-     .result-section { margin-bottom: 24px; }
-     .result-section h3 { color: #fafafa; font-size: 20px; margin-bottom: 12px; }
-     .result-section p { color: #d4d4d4; font-size: 15px; }
+       .btn-audio { background: #10b981; margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .result { margin-top: 40px; padding: 32px; background: #171717; border-radius: 12px; border: 1px solid #262626; display: none; }
+  .result.show { display: block; }
+  .match-container { text-align: center; margin: 20px 0 32px 0; }
+  .score-circle { position: relative; display: inline-block; width: 140px; height: 140px; }
+  .score-circle svg { width: 140px; height: 140px; }
+  .bg-circle { fill: none; stroke: #262626; stroke-width: 10; }
+  .progress-circle { fill: none; stroke: #22c55e; stroke-width: 10; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 408.407; stroke-dashoffset: 408.407; transition: stroke-dashoffset 1.5s ease-out; }
+  .score-number { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; font-weight: 800; }
+  .score-number span { font-size: 20px; color: #a3a3a3; }
+  .score-label { margin-top: 16px; color: #d4d4d4; font-weight: 600; }
+  .score-low { stroke: #ef4444; }
+  .score-mid { stroke: #f59e0b; }
+  .score-high { stroke: #22c55e; }
+  .result-section { margin-bottom: 24px; }
+  .result-section h3 { color: #fafafa; font-size: 20px; margin-bottom: 12px; }
+  .result-section p { color: #d4d4d4; font-size: 15px; line-height: 1.6; }
         @media (max-width: 768px) {.input-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -59,6 +60,8 @@
         <div class="result" id="resultado"></div>
     </main>
     <script>
+        let textoParaLeer = '';
+
         function updateFileName(input) {
             const fileName = document.getElementById('fileName');
             if (input.files.length > 0) {
@@ -66,6 +69,7 @@
                 fileName.style.color = '#22c55e';
             }
         }
+
         function animarScore(porcentaje) {
             const circle = document.querySelector('.progress-circle');
             const number = document.querySelector('.score-number');
@@ -83,6 +87,19 @@
                 if (current >= porcentaje) clearInterval(timer);
             }, 15);
         }
+
+        function leerResultado() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(textoParaLeer);
+                utterance.lang = 'es-AR';
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Tu navegador no soporta lectura de texto');
+            }
+        }
+
         async function analizar() {
             const cvFile = document.getElementById('cvInput').files[0];
             const jobDesc = document.getElementById('job').value;
@@ -105,6 +122,9 @@
                 });
                 const data = await response.json();
                 const score = Number(data?.score) || 0;
+
+                textoParaLeer = `Tu match con el puesto es de ${score} por ciento. Fortalezas: ${data?.fortalezas || 'No detectadas'}. Brechas a mejorar: ${data?.gaps || 'No detectadas'}. Recomendaciones: ${data?.recomendaciones || 'No hay recomendaciones'}. Veredicto: ${data?.veredicto || 'No disponible'}`;
+
                 resultado.innerHTML = `
                     <div class="match-container">
                         <div class="score-circle">
@@ -118,6 +138,9 @@
                     </div>
                     <div class="result-section"><h3>Fortalezas detectadas</h3><p>${data?.fortalezas || 'No detectadas'}</p></div>
                     <div class="result-section"><h3>Brechas a mejorar</h3><p>${data?.gaps || 'No detectadas'}</p></div>
+                    <div class="result-section"><h3>Recomendaciones</h3><p>${data?.recomendaciones || 'No hay recomendaciones'}</p></div>
+                    <div class="result-section"><h3>Veredicto</h3><p>${data?.veredicto || 'No disponible'}</p></div>
+                    <button class="btn-audio" onclick="leerResultado()">🔊 Escuchar resultado</button>
                 `;
                 resultado.classList.add('show');
                 setTimeout(() => animarScore(score), 200);
